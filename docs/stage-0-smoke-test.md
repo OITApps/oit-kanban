@@ -56,8 +56,10 @@ Wait for the terminal to print `Web UI: http://127.0.0.1:4173` (or similar port)
 
 **Action:** Load `http://127.0.0.1:4173` in Chrome.
 
-**Expected:** Kanban board appears with six lane headers visible:
-- Backlog, In Progress, Review, Done, Blocked, Trash
+**Expected:** Kanban board appears with six lane headers visible, in this order:
+- **Backlog → Design → Building → Review → QA → Shipped**
+
+(Trash is a right-click action on a card, not a lane. "Building" is displayed in the UI; the internal enum key is `in_progress`.)
 
 **Fail signal:** White screen, React error boundary, or missing lanes.
 
@@ -126,10 +128,10 @@ then click anywhere on the board and press Cmd+V (macOS) / Ctrl+V (Linux/Windows
 
 ### Checkpoint 6 — Lane drag-and-drop still works
 
-**Action:** Drag the imported card from Backlog to In Progress.
+**Action:** Drag the imported card from Backlog to Building.
 
 **Expected:**
-- Card moves to the In Progress lane
+- Card moves to the Building lane (internal enum key: `in_progress`)
 - Card count badges on both lanes update immediately
 
 **Fail signal:** Card snaps back to Backlog, or drag handle does not respond.
