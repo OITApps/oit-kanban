@@ -43,10 +43,8 @@ export function subscribeEmitState(cardId: string, callback: () => void): () => 
 	if (!listeners.has(cardId)) {
 		listeners.set(cardId, new Set());
 	}
-	// biome-ignore lint/style/noNonNullAssertion: just set above
 	listeners.get(cardId)!.add(callback);
 	return () => {
-		// biome-ignore lint/style/noNonNullAssertion: key still present
 		listeners.get(cardId)!.delete(callback);
 	};
 }
