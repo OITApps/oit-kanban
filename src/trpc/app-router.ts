@@ -3,10 +3,11 @@
 // and delegate domain behavior to runtime-api.ts and lower-level services.
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { initTRPC, TRPCError } from "@trpc/server";
-// ── End OIT seam ──────────────────────────────────────────────────────────────
 import { z } from "zod";
 // ── OIT seam ──────────────────────────────────────────────────────────────────
+import { createOitEmitRouter } from "../adapters/oit/server/emit-procedures.js";
 import { createOitImportRouter } from "../adapters/oit/server/import-procedures.js";
+// ── End OIT seam ──────────────────────────────────────────────────────────────
 
 import type {
 	RuntimeClineAccountBalanceResponse,
@@ -718,6 +719,7 @@ export const runtimeAppRouter = t.router({
 	// ── OIT seam ──────────────────────────────────────────────────────────────
 	oit: t.router({
 		import: createOitImportRouter(),
+		emit: createOitEmitRouter(),
 	}),
 	// ── End OIT seam ──────────────────────────────────────────────────────────
 });

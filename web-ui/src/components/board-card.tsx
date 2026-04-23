@@ -6,6 +6,10 @@ import { AlertCircle, AlertTriangle, Bot, GitBranch, Pencil, Play, RotateCcw, Tr
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+// ── OIT seam ──────────────────────────────────────────────────────────────────
+import { EmitFailedBadge } from "@/adapters/oit/EmitFailedBadge.js";
+import { UpdateOriginButton } from "@/adapters/oit/UpdateOriginButton.js";
+// ── End OIT seam ──────────────────────────────────────────────────────────────
 import {
 	formatClineReasoningEffortLabel,
 	formatClineSelectedModelButtonText,
@@ -233,6 +237,9 @@ export function BoardCard({
 	isDependencyLinking = false,
 	workspacePath,
 	defaultClineModelId = null,
+	// ── OIT seam ────────────────────────────────────────────────────────────
+	oitWorkspaceId = null,
+	// ── End OIT seam ────────────────────────────────────────────────────────
 }: {
 	card: BoardCardModel;
 	index: number;
@@ -257,6 +264,8 @@ export function BoardCard({
 	isDependencyLinking?: boolean;
 	workspacePath?: string | null;
 	defaultClineModelId?: string | null;
+	/** OIT seam: workspaceId for tRPC client resolution */
+	oitWorkspaceId?: string | null;
 }): React.ReactElement {
 	const [isHovered, setIsHovered] = useState(false);
 	const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -925,6 +934,32 @@ export function BoardCard({
 									{cancelAutomaticActionLabel}
 								</Button>
 							) : null}
+							{/* ── OIT seam ──────────────────────────────────────────────────── */}
+							{!isTrashCard ? (
+								<div
+									style={{ display: "flex", alignItems: "center", marginTop: 6 }}
+									onMouseDown={stopEvent}
+									onClick={stopEvent}
+								>
+									<UpdateOriginButton
+										cardId={card.id}
+										cardTitle={card.title}
+										cardDescription={card.prompt ?? ""}
+										cardLane={columnId}
+										origins={"[]"}
+										originCount={0}
+										kanbanCardUrl={`/card/${card.id}`}
+										workspaceId={oitWorkspaceId}
+									/>
+									<EmitFailedBadge
+										cardId={card.id}
+										onRetry={() => {
+											// Re-render will trigger UpdateOriginButton — no-op stub for seam
+										}}
+									/>
+								</div>
+							) : null}
+							{/* ── End OIT seam ────────────────────────────────────────────── */}
 						</div>
 					</div>
 				);
