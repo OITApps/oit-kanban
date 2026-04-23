@@ -12,6 +12,9 @@ import {
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+// ── OIT seam ──────────────────────────────────────────────────────────────────
+import { EmitSettingsPanel } from "@/adapters/oit/EmitSettingsPanel.js";
+// ── End OIT seam ──────────────────────────────────────────────────────────────
 import { AgentTerminalPanel } from "@/components/detail-panels/agent-terminal-panel";
 import { ClineAgentChatPanel, type ClineAgentChatPanelHandle } from "@/components/detail-panels/cline-agent-chat-panel";
 import { ColumnContextPanel } from "@/components/detail-panels/column-context-panel";
@@ -980,6 +983,9 @@ export function CardDetailView({
 								onToggleExpand={onBottomTerminalToggleExpand}
 							/>
 						) : null}
+						{/* ── OIT seam ──────────────────────────────────────────────────── */}
+						<EmitSettingsPanel cardId={selection.card.id} workspaceId={currentProjectId} />
+						{/* ── End OIT seam ────────────────────────────────────────────── */}
 					</>
 				)}
 			</div>
