@@ -3,7 +3,10 @@
 // and delegate domain behavior to runtime-api.ts and lower-level services.
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { initTRPC, TRPCError } from "@trpc/server";
+// ── End OIT seam ──────────────────────────────────────────────────────────────
 import { z } from "zod";
+// ── OIT seam ──────────────────────────────────────────────────────────────────
+import { createOitImportRouter } from "../adapters/oit/server/import-procedures.js";
 
 import type {
 	RuntimeClineAccountBalanceResponse,
@@ -712,6 +715,11 @@ export const runtimeAppRouter = t.router({
 				return await ctx.hooksApi.ingest(input);
 			}),
 	}),
+	// ── OIT seam ──────────────────────────────────────────────────────────────
+	oit: t.router({
+		import: createOitImportRouter(),
+	}),
+	// ── End OIT seam ──────────────────────────────────────────────────────────
 });
 
 export type RuntimeAppRouter = typeof runtimeAppRouter;

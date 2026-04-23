@@ -19,9 +19,9 @@ function neutralizeUntrusted(value: string): string {
 }
 
 function substitute(template: string, values: Record<string, string>): string {
-	return template.replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_full, name: string) => {
+	return template.replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_full, name: string): string => {
 		if (Object.hasOwn(values, name)) {
-			return values[name];
+			return values[name] as string;
 		}
 		return `{{${name}}}`;
 	});
@@ -31,7 +31,7 @@ function parseFrontmatter(md: string): { body: string; fields: Record<string, st
 	const match = FRONTMATTER_PATTERN.exec(md);
 	if (!match) return { body: md, fields: {} };
 	const fields: Record<string, string> = {};
-	for (const line of match[1].split("\n")) {
+	for (const line of (match[1] ?? "").split("\n")) {
 		const idx = line.indexOf(":");
 		if (idx === -1) continue;
 		const key = line.slice(0, idx).trim();

@@ -65,12 +65,13 @@ import {
 	selectLatestTaskChatMessageForTask,
 	selectTaskChatMessagesForTask,
 } from "@/runtime/native-agent";
+import { getRuntimeTrpcClient } from "@/runtime/trpc-client";
 import type { RuntimeClineReasoningEffort, RuntimeTaskSessionSummary } from "@/runtime/types";
 import { useRuntimeProjectConfig } from "@/runtime/use-runtime-project-config";
 import { useTerminalConnectionReady } from "@/runtime/use-terminal-connection-ready";
 import { useWorkspacePersistence } from "@/runtime/use-workspace-persistence";
 import { saveWorkspaceState } from "@/runtime/workspace-state-query";
-import { applyTaskDetailClineSettingsChange, findCardSelection } from "@/state/board-state";
+import { addTaskToColumnWithResult, applyTaskDetailClineSettingsChange, findCardSelection } from "@/state/board-state";
 import {
 	getTaskWorkspaceInfo,
 	getTaskWorkspaceSnapshot,
@@ -802,9 +803,49 @@ export default function App(): ReactElement {
 		return <KanbanAccessBlockedFallback />;
 	}
 
-	// Stage 0: log imports to console. Task 13 wires this to card creation.
+	// Stage 0: POST each ClickUp URL to oit.import.clickup tRPC procedure,
+	// then create a Kanban card with the returned OriginRef as its prompt.
+	// Non-ClickUp URLs (gh-issue, gh-pr) are out of Stage-0 scope — skip them.
 	function handleImport(urls: ClassifiedUrl[]) {
-		console.log("[oit] import requested", urls);
+		const clickupUrls = urls.filter((u) => u.tracker === "clickup");
+		if (clickupUrls.length === 0) {
+			if (urls.length > 0) {
+				console.warn("[oit] handleImport: only ClickUp URLs are supported in Stage 0", urls);
+			}
+			return;
+		}
+
+		const trpcClient = getRuntimeTrpcClient(currentProjectId);
+		const baseRef = defaultTaskBranchRef;
+
+		for (const classified of clickupUrls) {
+			// Fire-and-forget — errors surface via console.error; UI feedback deferred to Task 14.
+			void (async () => {
+				try {
+					const result = await trpcClient.oit.import.clickup.mutate({ url: classified.url });
+
+					if (!result.ok) {
+						console.error("[oit] import failed:", result.error, classified.url);
+						return;
+					}
+
+					const origin = result.origin;
+					const prompt = [origin.title_snapshot, origin.description_snapshot].filter(Boolean).join("\n\n");
+
+					setBoard((currentBoard) => {
+						const created = addTaskToColumnWithResult(currentBoard, "backlog", {
+							title: origin.title_snapshot,
+							prompt: prompt || origin.title_snapshot,
+							baseRef,
+						});
+						console.log("[oit] card created from ClickUp import:", created.task.id, origin.url);
+						return created.board;
+					});
+				} catch (err) {
+					console.error("[oit] import error:", err, classified.url);
+				}
+			})();
+		}
 	}
 
 	return (
