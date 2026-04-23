@@ -26,8 +26,11 @@ function createDefaultDeps(serverCwd: string): CreateProjectsApiDependencies {
 		summarizeProjectTaskCounts: vi.fn(
 			async (): Promise<RuntimeProjectTaskCounts> => ({
 				backlog: 0,
+				design: 0,
 				in_progress: 0,
 				review: 0,
+				qa: 0,
+				shipped: 0,
 				trash: 0,
 			}),
 		),
@@ -35,7 +38,15 @@ function createDefaultDeps(serverCwd: string): CreateProjectsApiDependencies {
 			id: "test",
 			path: "/test",
 			name: "test",
-			taskCounts: { backlog: 0, in_progress: 0, review: 0, trash: 0 },
+			taskCounts: {
+				backlog: 0,
+				design: 0,
+				in_progress: 0,
+				review: 0,
+				qa: 0,
+				shipped: 0,
+				trash: 0,
+			},
 		})),
 		broadcastRuntimeProjectsUpdated: vi.fn(),
 		getTerminalManagerForWorkspace: vi.fn(() => null),

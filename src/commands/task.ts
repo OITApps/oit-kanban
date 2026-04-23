@@ -10,7 +10,11 @@ import type {
 	RuntimeTaskClineSettings,
 	RuntimeWorkspaceStateResponse,
 } from "../core/api-contract";
-import { runtimeAgentIdSchema, runtimeClineReasoningEffortSchema } from "../core/api-contract";
+import {
+	runtimeAgentIdSchema,
+	runtimeBoardColumnIdSchema,
+	runtimeClineReasoningEffortSchema,
+} from "../core/api-contract";
 import { buildKanbanRuntimeUrl, getKanbanRuntimeOrigin, getRuntimeFetch } from "../core/runtime-endpoint";
 import {
 	addTaskDependency,
@@ -27,7 +31,10 @@ import { resolveProjectInputPath } from "../projects/project-path";
 import { loadWorkspaceContext, mutateWorkspaceState } from "../state/workspace-state";
 import type { RuntimeAppRouter } from "../trpc/app-router";
 
-const LIST_TASK_COLUMNS = ["backlog", "in_progress", "review", "trash"] as const;
+// SEAM: derived from runtimeBoardColumnIdSchema so OIT lanes (design,
+// qa, shipped) are supported automatically. Note: trash remains a member
+// since upstream logic lists it as a valid task column for trash ops.
+const LIST_TASK_COLUMNS = runtimeBoardColumnIdSchema.options;
 type ListTaskColumn = (typeof LIST_TASK_COLUMNS)[number];
 type TaskCommandTarget = { taskId?: string; column?: ListTaskColumn };
 

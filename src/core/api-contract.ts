@@ -74,7 +74,20 @@ export type RuntimeSlashCommandsResponse = z.infer<typeof runtimeSlashCommandsRe
 export const runtimeAgentIdSchema = z.enum(["claude", "codex", "gemini", "opencode", "droid", "kiro", "cline"]);
 export type RuntimeAgentId = z.infer<typeof runtimeAgentIdSchema>;
 
-export const runtimeBoardColumnIdSchema = z.enum(["backlog", "in_progress", "review", "trash"]);
+// SEAM: extended by oit-kanban fork with 3 new lane values for OIT's
+// Gated Two-Track process. See src/adapters/oit/lanes/oit-board-columns.ts
+// `in_progress` is preserved as the internal key for the "Building" lane —
+// the OIT UI labels it "Building", upstream logic (auto-move on first
+// commit, etc.) continues to function unchanged.
+export const runtimeBoardColumnIdSchema = z.enum([
+	"backlog",
+	"design",
+	"in_progress",
+	"review",
+	"qa",
+	"shipped",
+	"trash",
+]);
 export type RuntimeBoardColumnId = z.infer<typeof runtimeBoardColumnIdSchema>;
 
 export const runtimeTaskAutoReviewModeSchema = z.enum(["commit", "pr", "move_to_trash"]);
@@ -319,12 +332,9 @@ export const runtimeWorkspaceStateNotifyResponseSchema = z.object({
 });
 export type RuntimeWorkspaceStateNotifyResponse = z.infer<typeof runtimeWorkspaceStateNotifyResponseSchema>;
 
-export const runtimeProjectTaskCountsSchema = z.object({
-	backlog: z.number(),
-	in_progress: z.number(),
-	review: z.number(),
-	trash: z.number(),
-});
+// SEAM: derived from runtimeBoardColumnIdSchema so new OIT lanes
+// (design, qa, shipped) get zero-count entries automatically.
+export const runtimeProjectTaskCountsSchema = z.record(runtimeBoardColumnIdSchema, z.number().int().nonnegative());
 export type RuntimeProjectTaskCounts = z.infer<typeof runtimeProjectTaskCountsSchema>;
 
 export const runtimeProjectSummarySchema = z.object({

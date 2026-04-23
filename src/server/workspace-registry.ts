@@ -6,6 +6,7 @@ import type {
 	RuntimeProjectTaskCounts,
 	RuntimeWorkspaceStateResponse,
 } from "../core/api-contract";
+import { runtimeBoardColumnIdSchema } from "../core/api-contract";
 import {
 	listWorkspaceIndexEntries,
 	loadWorkspaceBoardById,
@@ -91,13 +92,14 @@ export interface WorkspaceRegistry {
 	}>;
 }
 
+// SEAM: derive zero counts from the enum so new OIT lanes
+// (design/qa/shipped) are supported without re-editing this literal.
 function createEmptyProjectTaskCounts(): RuntimeProjectTaskCounts {
-	return {
-		backlog: 0,
-		in_progress: 0,
-		review: 0,
-		trash: 0,
-	};
+	const counts: Partial<RuntimeProjectTaskCounts> = {};
+	for (const col of runtimeBoardColumnIdSchema.options) {
+		counts[col] = 0;
+	}
+	return counts as RuntimeProjectTaskCounts;
 }
 
 function countTasksByColumn(board: RuntimeBoardData): RuntimeProjectTaskCounts {
