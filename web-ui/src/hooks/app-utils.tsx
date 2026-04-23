@@ -1,3 +1,5 @@
+import type { RuntimeProjectTaskCounts } from "@runtime-contract";
+import { runtimeBoardColumnIdSchema } from "@runtime-contract";
 import type { RuntimeTaskSessionSummary } from "@/runtime/types";
 import { LocalStorageKey } from "@/storage/local-storage-store";
 import type { BoardData, TaskAutoReviewMode } from "@/types";
@@ -20,33 +22,14 @@ export interface SearchableTask {
 	columnTitle: string;
 }
 
-export function countTasksByColumn(board: BoardData): {
-	backlog: number;
-	in_progress: number;
-	review: number;
-	trash: number;
-} {
-	const counts = {
-		backlog: 0,
-		in_progress: 0,
-		review: 0,
-		trash: 0,
-	};
+export function countTasksByColumn(board: BoardData): RuntimeProjectTaskCounts {
+	// SEAM: derived from runtimeBoardColumnIdSchema so new OIT lanes are picked up automatically
+	const counts = Object.fromEntries(
+		runtimeBoardColumnIdSchema.options.map((col) => [col, 0]),
+	) as RuntimeProjectTaskCounts;
 	for (const column of board.columns) {
-		if (column.id === "backlog") {
-			counts.backlog += column.cards.length;
-			continue;
-		}
-		if (column.id === "in_progress") {
-			counts.in_progress += column.cards.length;
-			continue;
-		}
-		if (column.id === "review") {
-			counts.review += column.cards.length;
-			continue;
-		}
-		if (column.id === "trash") {
-			counts.trash += column.cards.length;
+		if (column.id in counts) {
+			counts[column.id] += column.cards.length;
 		}
 	}
 	return counts;
