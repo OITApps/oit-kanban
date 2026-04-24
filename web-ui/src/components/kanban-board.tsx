@@ -19,7 +19,7 @@ import { canCreateTaskDependency } from "@/state/board-state";
 import { findCardColumnId, type ProgrammaticCardMoveInFlight } from "@/state/drag-rules";
 import type { BoardCard, BoardColumnId, BoardData, BoardDependency } from "@/types";
 
-const BOARD_COLUMN_ORDER: BoardColumnId[] = ["backlog", "in_progress", "review", "trash"];
+const BOARD_COLUMN_ORDER: BoardColumnId[] = ["backlog", "design", "in_progress", "review", "qa", "shipped", "trash"];
 
 export type RequestProgrammaticCardMove = (move: ProgrammaticCardMoveInFlight) => boolean;
 

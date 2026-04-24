@@ -1,7 +1,13 @@
 import type { BoardColumnId, BoardData } from "@/types";
 
 export function isDetailViewColumnId(columnId: BoardColumnId): boolean {
-	return columnId === "in_progress" || columnId === "review";
+	return (
+		columnId === "design" ||
+		columnId === "in_progress" ||
+		columnId === "review" ||
+		columnId === "qa" ||
+		columnId === "shipped"
+	);
 }
 
 export function getNextDetailTaskIdAfterTrashMove(board: BoardData, taskId: string): string | null {
