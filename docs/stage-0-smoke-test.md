@@ -1,5 +1,7 @@
 # Stage 0 Smoke Test
 
+> **Before anything else:** start the dev server (`npm run dev:full`) and verify `curl http://127.0.0.1:4173/` returns HTML — a blank page or Vite error overlay here means a build/alias failure that will silently invalidate every subsequent checkpoint.
+
 This document covers both the **automated** smoke-test script and the **manual** fallback checklist.
 Run one or the other; they cover the same 6 verification checkpoints.
 
