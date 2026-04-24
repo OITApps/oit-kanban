@@ -810,6 +810,7 @@ export default function App(): ReactElement {
 			return;
 		}
 
+		console.log("[oit] import requested", urls);
 		const trpcClient = getRuntimeTrpcClient(currentProjectId);
 		const baseRef = defaultTaskBranchRef;
 
