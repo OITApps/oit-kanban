@@ -109,7 +109,7 @@ then click anywhere on the board and press Cmd+V (macOS) / Ctrl+V (Linux/Windows
 
 **Purpose:** Verify the "Emit failed" badge appears and is dismissible.
 
-**How to force a failure:**
+**How to force a ClickUp failure:**
 1. Open your Claude Code config (`~/.claude/settings.json` or the project `.claude/settings.json`)
 2. Temporarily remove or disable the ClickUp MCP server entry
 3. Restart the dev server: `npm run dev:full`
@@ -123,6 +123,43 @@ then click anywhere on the board and press Cmd+V (macOS) / Ctrl+V (Linux/Windows
 - "Mark resolved" dismisses the badge without retrying
 
 **Cleanup:** Re-enable ClickUp MCP in settings and restart the dev server.
+
+**How to force a GitHub import failure:**
+1. Run `gh auth logout` to deauthenticate the gh CLI
+2. Paste a GitHub issue or PR URL on the board
+3. **Expected:** No card is created; browser console shows `[oit] import failed: GitHub Issue: gh CLI not authenticated` (or similar)
+4. **Cleanup:** Run `gh auth login` to re-authenticate before continuing
+
+**Broken Imports path (GitHub):** GitHub import failures land in `result.ok === false` and log via `console.error("[oit] import failed:", ...)`. The same "Emit failed" badge flow applies once the card-level error UI is wired (Task 14).
+
+---
+
+### Checkpoint 3b — GitHub Issue import via paste
+
+**Action:** Copy a GitHub issue URL (`https://github.com/<owner>/<repo>/issues/<number>`) to your clipboard,
+then click anywhere on the board and press Cmd+V (macOS) / Ctrl+V (Linux/Windows).
+
+**Expected:**
+- A toast or loading indicator appears briefly
+- A new card appears in the **Backlog** lane within ~15 seconds (gh CLI round-trip is slower than ClickUp MCP)
+- The card title matches the GitHub issue title
+
+**Fail signal:** No card appears, or an error toast appears. Check the browser console for `[oit] import failed:` logs.
+
+**Prerequisite:** `gh auth status` must show an authenticated account with read access to the repo.
+
+---
+
+### Checkpoint 3c — GitHub PR import via paste
+
+**Action:** Copy a GitHub PR URL (`https://github.com/<owner>/<repo>/pull/<number>`) to your clipboard,
+then paste it on the board.
+
+**Expected:**
+- A new card appears in **Backlog** with the PR title
+- Opening the card detail shows the description includes a `[PR: head=<branch>, base=<branch>]` suffix
+
+**Fail signal:** No card appears, or card description is missing the branch suffix.
 
 ---
 

@@ -34,11 +34,18 @@ import signal
 CLICKUP_TEST_TASK_URL = os.environ.get(
     "CLICKUP_TEST_TASK_URL", "{{CLICKUP_TEST_TASK_URL}}"
 )
+GH_ISSUE_TEST_URL = os.environ.get(
+    "GH_ISSUE_TEST_URL", ""
+)
+GH_PR_TEST_URL = os.environ.get(
+    "GH_PR_TEST_URL", ""
+)
 KANBAN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # dev:full picks its own port starting at 4173; we read it from stdout
 WEB_UI_PORT = int(os.environ.get("KANBAN_WEB_UI_PORT", "4173"))
 WEB_UI_URL = f"http://127.0.0.1:{WEB_UI_PORT}/"
 IMPORT_WAIT_S = 12      # seconds to wait for ClickUp import
+GH_IMPORT_WAIT_S = 20   # gh CLI is slower; allow extra time
 EMIT_WAIT_S = 12        # seconds to wait for emit to complete
 VITE_READY_TIMEOUT = 30 # seconds to wait for Vite to start
 
@@ -72,8 +79,10 @@ if "{{CLICKUP_TEST_TASK_URL}}" in CLICKUP_TEST_TASK_URL:
         "    export CLICKUP_TEST_TASK_URL='https://app.clickup.com/t/<task-id>'"
     )
 
-print(f"  Task URL : {CLICKUP_TEST_TASK_URL}")
-print(f"  App URL  : {WEB_UI_URL}")
+print(f"  Task URL      : {CLICKUP_TEST_TASK_URL}")
+print(f"  GH Issue URL  : {GH_ISSUE_TEST_URL or '(skipped — GH_ISSUE_TEST_URL not set)'}")
+print(f"  GH PR URL     : {GH_PR_TEST_URL or '(skipped — GH_PR_TEST_URL not set)'}")
+print(f"  App URL       : {WEB_UI_URL}")
 print()
 
 # ---------------------------------------------------------------------------
@@ -220,6 +229,78 @@ check(
 
 if not card_appeared:
     print("  WARNING: Card did not appear — emit test will be skipped.")
+
+# ---------------------------------------------------------------------------
+# Step 7b – Paste GitHub Issue URL (optional — skipped if env var not set)
+# ---------------------------------------------------------------------------
+if GH_ISSUE_TEST_URL:
+    print(f"[6b] Pasting GitHub Issue URL: {GH_ISSUE_TEST_URL}")
+    rc, out = run_harness(
+        "js(\"\"\"(function(){var dt=new DataTransfer();dt.setData('text/plain','"
+        + GH_ISSUE_TEST_URL.replace("'", "\\'")
+        + "');window.dispatchEvent(new ClipboardEvent('paste',{clipboardData:dt,bubbles:true}));})()\"\"\");print('GH_ISSUE_PASTE_OK')",
+        timeout=15,
+    )
+    check("GitHub Issue paste event dispatched", rc == 0 and "GH_ISSUE_PASTE_OK" in out, out.strip() if rc != 0 else "")
+
+    print(f"  Waiting {GH_IMPORT_WAIT_S}s for GitHub Issue import to complete...")
+    time.sleep(GH_IMPORT_WAIT_S)
+
+    rc, out = run_harness("""
+count = js("document.querySelectorAll('[data-column-id=backlog] [data-task-id]').length")
+print("BACKLOG_CARD_COUNT_AFTER_GH_ISSUE:", count)
+""")
+    gh_issue_card_appeared = "BACKLOG_CARD_COUNT_AFTER_GH_ISSUE: 0" not in out and "BACKLOG_CARD_COUNT_AFTER_GH_ISSUE:" in out
+    check(
+        "Card appeared in Backlog after GitHub Issue import",
+        gh_issue_card_appeared,
+        out.strip(),
+    )
+else:
+    print("[6b] Skipping GitHub Issue import (GH_ISSUE_TEST_URL not set).")
+    print(f"  To enable: export GH_ISSUE_TEST_URL='https://github.com/<owner>/<repo>/issues/<number>'")
+
+# ---------------------------------------------------------------------------
+# Step 7c – Paste GitHub PR URL (optional — skipped if env var not set)
+# ---------------------------------------------------------------------------
+if GH_PR_TEST_URL:
+    print(f"[6c] Pasting GitHub PR URL: {GH_PR_TEST_URL}")
+    rc, out = run_harness(
+        "js(\"\"\"(function(){var dt=new DataTransfer();dt.setData('text/plain','"
+        + GH_PR_TEST_URL.replace("'", "\\'")
+        + "');window.dispatchEvent(new ClipboardEvent('paste',{clipboardData:dt,bubbles:true}));})()\"\"\");print('GH_PR_PASTE_OK')",
+        timeout=15,
+    )
+    check("GitHub PR paste event dispatched", rc == 0 and "GH_PR_PASTE_OK" in out, out.strip() if rc != 0 else "")
+
+    print(f"  Waiting {GH_IMPORT_WAIT_S}s for GitHub PR import to complete...")
+    time.sleep(GH_IMPORT_WAIT_S)
+
+    rc, out = run_harness("""
+count = js("document.querySelectorAll('[data-column-id=backlog] [data-task-id]').length")
+print("BACKLOG_CARD_COUNT_AFTER_GH_PR:", count)
+""")
+    gh_pr_card_appeared = "BACKLOG_CARD_COUNT_AFTER_GH_PR: 0" not in out and "BACKLOG_CARD_COUNT_AFTER_GH_PR:" in out
+    check(
+        "Card appeared in Backlog after GitHub PR import",
+        gh_pr_card_appeared,
+        out.strip(),
+    )
+
+    # Verify the card description contains branch info
+    rc, out = run_harness("""
+# Check last card's detail for branch info (open the last card in backlog)
+cards = js("Array.from(document.querySelectorAll('[data-column-id=backlog] [data-task-id]')).map(e=>e.dataset.taskId)")
+print("CARD_IDS:", cards)
+""")
+    check(
+        "GitHub PR cards visible in backlog",
+        "CARD_IDS:" in out and "[]" not in out,
+        out.strip(),
+    )
+else:
+    print("[6c] Skipping GitHub PR import (GH_PR_TEST_URL not set).")
+    print(f"  To enable: export GH_PR_TEST_URL='https://github.com/<owner>/<repo>/pull/<number>'")
 
 # ---------------------------------------------------------------------------
 # Step 8 – Click "Update origin" and verify no "Emit failed" badge
