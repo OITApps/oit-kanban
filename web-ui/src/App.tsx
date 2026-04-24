@@ -803,26 +803,34 @@ export default function App(): ReactElement {
 		return <KanbanAccessBlockedFallback />;
 	}
 
-	// Stage 0: POST each ClickUp URL to oit.import.clickup tRPC procedure,
-	// then create a Kanban card with the returned OriginRef as its prompt.
-	// Non-ClickUp URLs (gh-issue, gh-pr) are out of Stage-0 scope — skip them.
+	// POST each URL to the appropriate OIT import tRPC procedure, then create a Kanban card.
+	// Supports: clickup, gh-issue, gh-pr.
 	function handleImport(urls: ClassifiedUrl[]) {
-		const clickupUrls = urls.filter((u) => u.tracker === "clickup");
-		if (clickupUrls.length === 0) {
-			if (urls.length > 0) {
-				console.warn("[oit] handleImport: only ClickUp URLs are supported in Stage 0", urls);
-			}
+		if (urls.length === 0) {
 			return;
 		}
 
 		const trpcClient = getRuntimeTrpcClient(currentProjectId);
 		const baseRef = defaultTaskBranchRef;
 
-		for (const classified of clickupUrls) {
+		for (const classified of urls) {
 			// Fire-and-forget — errors surface via console.error; UI feedback deferred to Task 14.
 			void (async () => {
 				try {
-					const result = await trpcClient.oit.import.clickup.mutate({ url: classified.url });
+					const mutateArg = { url: classified.url };
+					const result =
+						classified.tracker === "clickup"
+							? await trpcClient.oit.import.clickup.mutate(mutateArg)
+							: classified.tracker === "gh-issue"
+								? await trpcClient.oit.import.ghIssue.mutate(mutateArg)
+								: classified.tracker === "gh-pr"
+									? await trpcClient.oit.import.ghPr.mutate(mutateArg)
+									: null;
+
+					if (result === null) {
+						console.warn("[oit] handleImport: unknown tracker, skipping:", classified);
+						return;
+					}
 
 					if (!result.ok) {
 						console.error("[oit] import failed:", result.error, classified.url);
@@ -838,7 +846,7 @@ export default function App(): ReactElement {
 							prompt: prompt || origin.title_snapshot,
 							baseRef,
 						});
-						console.log("[oit] card created from ClickUp import:", created.task.id, origin.url);
+						console.log("[oit] card created from", origin.tracker, "import:", created.task.id, origin.url);
 						return created.board;
 					});
 				} catch (err) {
