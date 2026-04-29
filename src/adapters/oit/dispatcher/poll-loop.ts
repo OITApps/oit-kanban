@@ -17,10 +17,15 @@ export class PollLoop {
 	start(): void {
 		if (this.handle !== null) return; // idempotent
 		this.handle = setInterval(() => {
-			this.inflight = this.tick().catch((err) => {
-				// biome-ignore lint: console allowed for error boundary logging
-				console.error("[PollLoop] tick error:", err);
-			});
+			if (this.inflight !== null) return; // skip overlapping tick
+			this.inflight = this.tick()
+				.catch((err) => {
+					// biome-ignore lint: console allowed for error boundary logging
+					console.error("[PollLoop] tick error:", err);
+				})
+				.finally(() => {
+					this.inflight = null;
+				});
 		}, this.intervalMs);
 	}
 
