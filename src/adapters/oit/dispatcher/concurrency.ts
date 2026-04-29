@@ -12,6 +12,16 @@ export interface ConcurrencyGateOptions {
  *
  * Maintains an in-memory map of cardId → attemptId so release() can close
  * the right row without requiring the caller to track the attempt ID.
+ *
+ * KNOWN COORDINATION CONCERN (Task 17): Both this gate's stub rows AND
+ * Task 5's checkAndReserve() rows are counted by getActiveAttempts(). A
+ * single dispatch will consume 2 slots against the cap unless Task 17
+ * either (a) filters runnerKind="concurrency-gate" out of the active
+ * count, or (b) releases the gate stub immediately after checkAndReserve
+ * succeeds, or (c) skips the gate entirely when checkAndReserve is in use.
+ *
+ * NOTE: `inflight` Map entries only evict on release(). Callers MUST call
+ * release() in a finally-block to avoid unbounded Map growth.
  */
 export class ConcurrencyGate {
 	private readonly maxConcurrent: number;
@@ -63,7 +73,7 @@ export class ConcurrencyGate {
 			cardId,
 			attemptNumber: 0,
 			runnerKind: "concurrency-gate",
-			startedAt: 0,
+			startedAt: Date.now(),
 			endedAt: Date.now(),
 			result: "cancelled",
 			idempotencyKey: `gate:${attemptId}`,

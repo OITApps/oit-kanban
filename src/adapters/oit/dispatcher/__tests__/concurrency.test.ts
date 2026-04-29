@@ -61,4 +61,17 @@ describe("ConcurrencyGate", () => {
 		expect(gate.acquire("card-b")).toBe(true);
 		expect(gate.acquire("card-c")).toBe(false);
 	});
+
+	it("does not throw when release() is called for a card that was never acquired", () => {
+		const gate = new ConcurrencyGate({ maxConcurrent: 2, store });
+		expect(() => gate.release("never-acquired")).not.toThrow();
+	});
+
+	it("allows the same cardId to acquire again after a release (retry pattern)", () => {
+		seedCard("card-a");
+		const gate = new ConcurrencyGate({ maxConcurrent: 2, store });
+		expect(gate.acquire("card-a")).toBe(true);
+		gate.release("card-a");
+		expect(gate.acquire("card-a")).toBe(true);
+	});
 });
