@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS issues (
   card_id          TEXT    PRIMARY KEY,
-  status           TEXT    NOT NULL DEFAULT 'active',
+  status           TEXT    NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','done','blocked')),
   last_seen_at     INTEGER NOT NULL,
   current_attempt_id TEXT  NULL,
   blocker_count    INTEGER NOT NULL DEFAULT 0

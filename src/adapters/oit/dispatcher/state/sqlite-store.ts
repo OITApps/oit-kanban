@@ -78,6 +78,21 @@ export class SqliteStore {
 			.run(card);
 	}
 
+	/**
+	 * Record an attempt row, or update an existing one keyed by `id`.
+	 *
+	 * Conflict semantics:
+	 * - ON CONFLICT(id) DO UPDATE — re-recording with the same `id` updates
+	 *   `ended_at`, `result`, `input_tokens`, and `output_tokens`. Used to
+	 *   transition an attempt from in-progress to terminal.
+	 * - UNIQUE(idempotency_key) — re-recording with a NEW `id` but a duplicate
+	 *   `idempotency_key` will throw a `SqliteError: UNIQUE constraint failed:
+	 *   attempts.idempotency_key`. Callers (e.g., Task 5 idempotency layer)
+	 *   are expected to dedupe via `idempotency_key` BEFORE invoking this method.
+	 *
+	 * @throws SqliteError when FK card_id does not exist in issues table.
+	 * @throws SqliteError when idempotency_key collides with another `id`.
+	 */
 	recordAttempt(attempt: AttemptRecord): void {
 		this.db
 			.prepare<{

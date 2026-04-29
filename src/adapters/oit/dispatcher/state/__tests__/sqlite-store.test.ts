@@ -48,6 +48,19 @@ describe("SqliteStore — issues", () => {
 		expect(card?.status).toBe("done");
 		expect(card?.blockerCount).toBe(1);
 	});
+
+	it("rejects an upsertCard with an invalid status (DB CHECK constraint)", () => {
+		expect(() =>
+			store.upsertCard({
+				// @ts-expect-error - intentionally invalid status to verify DB CHECK
+				status: "bogus",
+				cardId: "card-bad-status",
+				lastSeenAt: 1000,
+				currentAttemptId: null,
+				blockerCount: 0,
+			}),
+		).toThrow(/CHECK constraint failed/);
+	});
 });
 
 describe("SqliteStore — attempts", () => {
@@ -97,6 +110,59 @@ describe("SqliteStore — attempts", () => {
 			outputTokens: 50,
 		});
 		expect(store.getActiveAttempts()).toHaveLength(0);
+	});
+
+	it("throws when inserting a different attempt id with a duplicate idempotency_key", () => {
+		store.upsertCard({
+			cardId: "card-005",
+			status: "active",
+			lastSeenAt: 1000,
+			currentAttemptId: null,
+			blockerCount: 0,
+		});
+		store.recordAttempt({
+			id: "attempt-005a",
+			cardId: "card-005",
+			attemptNumber: 1,
+			runnerKind: "claude",
+			startedAt: 1000,
+			endedAt: null,
+			result: null,
+			idempotencyKey: "shared-ikey",
+			inputTokens: 0,
+			outputTokens: 0,
+		});
+		expect(() =>
+			store.recordAttempt({
+				id: "attempt-005b",
+				cardId: "card-005",
+				attemptNumber: 2,
+				runnerKind: "claude",
+				startedAt: 1100,
+				endedAt: null,
+				result: null,
+				idempotencyKey: "shared-ikey",
+				inputTokens: 0,
+				outputTokens: 0,
+			}),
+		).toThrow(/UNIQUE constraint failed: attempts.idempotency_key/);
+	});
+
+	it("throws when inserting an attempt for a non-existent card_id (FK enforcement)", () => {
+		expect(() =>
+			store.recordAttempt({
+				id: "attempt-orphan",
+				cardId: "card-does-not-exist",
+				attemptNumber: 1,
+				runnerKind: "claude",
+				startedAt: 1000,
+				endedAt: null,
+				result: null,
+				idempotencyKey: "ikey-orphan",
+				inputTokens: 0,
+				outputTokens: 0,
+			}),
+		).toThrow(/FOREIGN KEY constraint failed/);
 	});
 });
 
