@@ -39,6 +39,11 @@ export class ConcurrencyGate {
 	 * Returns false if at or above cap — caller must not start the run.
 	 */
 	acquire(cardId: string): boolean {
+		// Per-card concurrency = 1. Re-acquire on an already-held cardId would
+		// orphan the previous stub row in `attempts` (ended_at stays null, so
+		// it counts forever in getActiveAttempts), permanently leaking a cap slot.
+		if (this.inflight.has(cardId)) return false;
+
 		const active = this.store.getActiveAttempts();
 		if (active.length >= this.maxConcurrent) {
 			return false;

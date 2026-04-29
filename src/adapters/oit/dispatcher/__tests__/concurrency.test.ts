@@ -74,4 +74,13 @@ describe("ConcurrencyGate", () => {
 		gate.release("card-a");
 		expect(gate.acquire("card-a")).toBe(true);
 	});
+
+	it("refuses re-acquire of the same cardId before release (prevents stub leak)", () => {
+		seedCard("card-a");
+		const gate = new ConcurrencyGate({ maxConcurrent: 5, store });
+		expect(gate.acquire("card-a")).toBe(true);
+		expect(gate.acquire("card-a")).toBe(false);
+		// Verify only ONE active attempt was created (no leak)
+		expect(store.getActiveAttempts()).toHaveLength(1);
+	});
 });
