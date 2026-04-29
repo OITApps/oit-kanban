@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createDispatcher, type DispatcherCard, type DispatcherState, type RunSpec } from "../index.js";
+import {
+	type AttemptRecord,
+	createDispatcher,
+	type DispatcherCard,
+	type DispatcherState,
+	type RunSpec,
+} from "../index.js";
 
 describe("dispatcher skeleton", () => {
 	it("exports DispatcherCard type (structural check via object)", () => {
@@ -26,6 +32,22 @@ describe("dispatcher skeleton", () => {
 			idempotencyKey: "aabbcc",
 		};
 		expect(spec.runnerKind).toBe("claude");
+	});
+
+	it("exports AttemptRecord type (structural check)", () => {
+		const attempt: AttemptRecord = {
+			id: "attempt-1",
+			cardId: "card-abc",
+			attemptNumber: 1,
+			runnerKind: "claude",
+			startedAt: Date.now(),
+			endedAt: null,
+			result: null,
+			idempotencyKey: "deadbeef",
+			inputTokens: 0,
+			outputTokens: 0,
+		};
+		expect(attempt.runnerKind).toBe("claude");
 	});
 
 	it("createDispatcher returns an object with expected shape", () => {

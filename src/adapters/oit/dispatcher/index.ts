@@ -1,3 +1,5 @@
+import type { DispatcherOptions } from "./types.js";
+
 export type {
 	AttemptRecord,
 	DispatcherCard,
@@ -15,7 +17,7 @@ export interface DispatcherHandle {
  * Factory: wire together store + poll loop + concurrency gate.
  * Stub for now — full implementation added in later tasks.
  */
-export function createDispatcher(opts: import("./types.js").DispatcherOptions): DispatcherHandle {
+export function createDispatcher(opts: DispatcherOptions): DispatcherHandle {
 	void opts; // used in later tasks
 	return {
 		start() {
