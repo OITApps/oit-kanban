@@ -42,33 +42,40 @@ describe("computeIdempotencyKey", () => {
 });
 
 describe("checkAndReserve", () => {
-	it("returns true when key is new", () => {
-		const key = computeIdempotencyKey({ cardId: "card-idem", attemptNumber: 1, runnerKind: "claude" });
-		const result = checkAndReserve(store, { key, cardId: "card-idem", attemptNumber: 1, runnerKind: "claude" });
-		expect(result).toBe(true);
-	});
-
-	it("returns false when key already exists (second reservation)", () => {
-		const key = computeIdempotencyKey({ cardId: "card-idem", attemptNumber: 1, runnerKind: "claude" });
-		const args = { key, cardId: "card-idem", attemptNumber: 1, runnerKind: "claude" };
-		expect(checkAndReserve(store, args)).toBe(true);
-		expect(checkAndReserve(store, args)).toBe(false);
-	});
-
-	it("allows different attempt numbers to reserve independently", () => {
-		const args1 = {
-			key: computeIdempotencyKey({ cardId: "card-idem", attemptNumber: 1, runnerKind: "claude" }),
+	it("returns reserved=true and the key when input is new", () => {
+		const result = checkAndReserve(store, {
 			cardId: "card-idem",
 			attemptNumber: 1,
 			runnerKind: "claude",
-		};
-		const args2 = {
-			key: computeIdempotencyKey({ cardId: "card-idem", attemptNumber: 2, runnerKind: "claude" }),
-			cardId: "card-idem",
-			attemptNumber: 2,
-			runnerKind: "claude",
-		};
-		expect(checkAndReserve(store, args1)).toBe(true);
-		expect(checkAndReserve(store, args2)).toBe(true);
+		});
+		expect(result.reserved).toBe(true);
+		expect(result.key).toMatch(/^[0-9a-f]{64}$/);
+	});
+
+	it("returns reserved=false (still with the key) when input is a duplicate", () => {
+		const input = { cardId: "card-idem", attemptNumber: 1, runnerKind: "claude" };
+		const first = checkAndReserve(store, input);
+		expect(first.reserved).toBe(true);
+		const second = checkAndReserve(store, input);
+		expect(second.reserved).toBe(false);
+		expect(second.key).toBe(first.key);
+	});
+
+	it("allows different attempt numbers to reserve independently", () => {
+		const r1 = checkAndReserve(store, { cardId: "card-idem", attemptNumber: 1, runnerKind: "claude" });
+		const r2 = checkAndReserve(store, { cardId: "card-idem", attemptNumber: 2, runnerKind: "claude" });
+		expect(r1.reserved).toBe(true);
+		expect(r2.reserved).toBe(true);
+		expect(r1.key).not.toBe(r2.key);
+	});
+
+	it("re-throws non-UNIQUE errors (e.g. FK violation when parent card missing)", () => {
+		expect(() =>
+			checkAndReserve(store, {
+				cardId: "card-does-not-exist",
+				attemptNumber: 1,
+				runnerKind: "claude",
+			}),
+		).toThrow(/FOREIGN KEY constraint failed/);
 	});
 });
