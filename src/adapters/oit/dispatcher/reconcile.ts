@@ -35,6 +35,8 @@ export async function reconcile(cards: DispatcherCard[], adapters: ReconcileAdap
 					? await adapters.refreshGhStatus(card.cardId)
 					: await adapters.refreshClickUpStatus(card.cardId);
 
+				// terminal takes precedence over missing when both are set —
+				// an origin that's both 404 and terminal is treated as terminal.
 				if (status.terminal) {
 					toStop.push(card.cardId);
 				} else if (status.missing) {

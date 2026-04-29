@@ -66,4 +66,26 @@ describe("reconcile", () => {
 		const result = await reconcile(cards, adapters);
 		expect(result.toBlock).toContain("error-card");
 	});
+
+	it("calls refreshGhStatus for gh-pr cards", async () => {
+		const refreshGhStatus = vi.fn().mockResolvedValue({ terminal: true, missing: false });
+		const refreshClickUpStatus = vi.fn().mockResolvedValue({ terminal: false, missing: false });
+		const adapters: ReconcileAdapters = { refreshClickUpStatus, refreshGhStatus };
+		const cards = [makeCard({ cardId: "gh-pr://OITApps/mpp_dev/pull/304" })];
+		const result = await reconcile(cards, adapters);
+		expect(refreshGhStatus).toHaveBeenCalledWith("gh-pr://OITApps/mpp_dev/pull/304");
+		expect(refreshClickUpStatus).not.toHaveBeenCalled();
+		expect(result.toStop).toContain("gh-pr://OITApps/mpp_dev/pull/304");
+	});
+
+	it("handles empty cards array without calling any adapter", async () => {
+		const refreshGhStatus = vi.fn();
+		const refreshClickUpStatus = vi.fn();
+		const adapters: ReconcileAdapters = { refreshClickUpStatus, refreshGhStatus };
+		const result = await reconcile([], adapters);
+		expect(result.toStop).toEqual([]);
+		expect(result.toBlock).toEqual([]);
+		expect(refreshGhStatus).not.toHaveBeenCalled();
+		expect(refreshClickUpStatus).not.toHaveBeenCalled();
+	});
 });
