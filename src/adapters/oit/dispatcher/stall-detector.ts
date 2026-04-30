@@ -69,8 +69,10 @@ export class StallDetector {
 		const existing = this.timers.get(attemptId);
 		if (existing !== undefined) clearTimeout(existing);
 		const handle = setTimeout(() => {
-			this.cleanup(attemptId);
+			// Capture resolver BEFORE cleanup, otherwise the resolvers Map entry
+			// is deleted and we'd never resolve the watch Promise.
 			const resolver = this.resolvers.get(attemptId);
+			this.cleanup(attemptId);
 			if (resolver) resolver("stalled");
 		}, this.stallTimeoutMs);
 		this.timers.set(attemptId, handle);

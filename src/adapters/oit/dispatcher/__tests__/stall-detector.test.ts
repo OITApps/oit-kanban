@@ -78,4 +78,19 @@ describe("StallDetector", () => {
 		// Second abort should not throw
 		expect(() => controller.abort()).not.toThrow();
 	});
+
+	it("resolves 'stalled' if notifyActivity is called and then activity stops (regression)", async () => {
+		const detector = new StallDetector({ stallTimeoutMs: 5_000 });
+		const controller = new AbortController();
+		const promise = detector.watch("attempt-006", controller.signal);
+
+		// Activity, then silence — should still stall after timeout.
+		await vi.advanceTimersByTimeAsync(2_000);
+		detector.notifyActivity("attempt-006");
+		// Sliding window resets to 5s. Advance past it without further activity.
+		await vi.advanceTimersByTimeAsync(5_001);
+
+		const result = await promise;
+		expect(result).toBe("stalled");
+	});
 });
